@@ -1,5 +1,5 @@
 """Defined a robot model"""
-from models import coordinating
+from models import handling
 
 class Robot(object):
     """Base model for Robot."""
@@ -15,5 +15,5 @@ class ScrapingRobot(Robot):
     def scrape_company(self):
         print('scrape_company')
 
-    def write_data_to_csv(self):
-        print('write_data_to_csv')
+    def write_data(self):
+        print('write_data')
