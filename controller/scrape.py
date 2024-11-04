@@ -6,4 +6,4 @@ def get_company_infomation():
     scraping_robot = robot.ScrapingRobot()
     scraping_robot.read_company_list()
     scraping_robot.scrape_company()
-    scraping_robot.write_data_to_csv()
+    scraping_robot.write_data()
