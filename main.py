@@ -1,3 +1,3 @@
-import controller.scrape
+import controller.controller
 
-controller.scrape.get_company_infomation()
+controller.controller.get_company_infomation()

@@ -1,9 +1,9 @@
 """Controller for scraping company infomation"""
-from models import robot
+from models import scraping
 
 def get_company_infomation():
     """Function to scrape company information"""
-    scraping_robot = robot.ScrapingRobot()
-    scraping_robot.read_company_list()
+    scraping_robot = scraping.ScrapingRobot()
+    # scraping_robot.read_company_list()
     scraping_robot.scrape_company()
-    scraping_robot.write_data()
+    # scraping_robot.write_data()
