@@ -14,6 +14,11 @@ class Scraping(object):
 class ScrapingRobot(Scraping):
     """Scrape company information"""
 
+    def scrape_company_information(self):
+        self.scrape_basic_info()
+        self.scrape_stock_price()
+        self.scrape_sales()
+
     def read_company_list(self):
         print('------------------------')
         print(f'input list')
