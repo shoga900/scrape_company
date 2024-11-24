@@ -6,44 +6,55 @@ import time
 from models import handling
 
 class Scraping(object):
-    def __init__(self,code='9252'): 
+    def __init__(self): 
+        pass
+        # self.df = pd.DataFrame()
         # base: 9252
         # haishi: 5127
-        self.code = code
 
 class ScrapingRobot(Scraping):
     """Scrape company information"""
 
-    def scrape_company_information(self):
-        self.scrape_basic_info()
-        self.scrape_stock_price()
-        self.scrape_sales()
-
     def read_company_list(self):
-        print('------------------------')
-        print(f'input list')
-        print('------------------------')
+        self.list = [9252]
+        self.df = pd.DataFrame(0, index=self.list, columns=[])
+        print(f'list={self.list}')
 
-    def scrape_basic_info(self):
+    def scrape_company_information(self):
+        for code in self.list:
+            self.scrape_basic_info(code)
+            self.scrape_stock_price(code)
+            self.scrape_performance(code)
+
+    def output_data(self):
+        print(self.df)
+
+
+    def scrape_basic_info(self, code):
         # 現在の株価と発行済株式数を抽出する
-        URL = 'https://kabutan.jp/stock/?code=' + str(self.code)
+        URL = 'https://kabutan.jp/stock/?code=' + str(code)
 
         try:
             # 現在の株価と発行済株式数を抽出する
             dfs = pd.read_html(URL, match='発行済株式')
 
             df = dfs[0]
-            market_capitalization = df.iat[8, 1][:-2]
+            stock_price = 100
+            market_capitalization = float(df.iat[8, 1][:-2])
             temp_now_stocks = df.iat[9, 1]
-            now_stocks = int(temp_now_stocks[:-2].replace(',', ''))
+            stocks = int(temp_now_stocks[:-2].replace(',', ''))
+            stock_price = int(market_capitalization/ float(stocks) * 1E+8)
 
             result = {
+                '株価(円)': stock_price,
                 '時価総額(億円)': market_capitalization,
-                '株式数(株)': now_stocks,
+                '株式数(株)': stocks,
                 }
             
-            result_df = pd.DataFrame([result])
-            print(result_df)
+            df_basic = pd.DataFrame([result])
+            df_basic.rename(index={0: code}, inplace=True)
+            self.df = pd.concat([self.df, df_basic], axis=1)
+            # print(self.df)
 
             time.sleep(0.5)
 
@@ -55,10 +66,10 @@ class ScrapingRobot(Scraping):
             return
     
 
-    def scrape_stock_price(self):
+    def scrape_stock_price(self, code):
         # 株価を月足で取得し、倍率を出力する
         URL = 'https://kabutan.jp/stock/kabuka?code=' \
-          + str(self.code) + '&ashi=mon'
+          + str(code) + '&ashi=mon'
 
         dfs = pd.read_html(URL, match='始値')
         df = dfs[1]
@@ -96,9 +107,6 @@ class ScrapingRobot(Scraping):
                 "倍率(倍)": multiplier,
             }
 
-            result_df = pd.DataFrame([result])
-            print(result_df)
-
         else:
             print("基準月以降にデータがありません。")
             result = {
@@ -106,69 +114,53 @@ class ScrapingRobot(Scraping):
                 "基準終値": base_close,
             }
 
+        df_price = pd.DataFrame([result])
+        df_price.rename(index={0: code}, inplace=True)
+        self.df = pd.concat([self.df, df_price], axis=1)
+        # print(result_df)
+
         time.sleep(0.5)
 
-
-    def scrape_sales(self):
+    def scrape_performance(self, code):
         # 決算ページから業績データを取得する
         URL = 'https://kabutan.jp/stock/finance?code=' \
-            + str(self.code)
+            + str(code)
 
         # 過去の決算数値をスクレイピング
         dfs = pd.read_html(URL, match='決算期')
 
-        if len(dfs[0]) < 8: # 4年前までの株価データがない場合はブレイクする
+        if len(dfs[0]) < 4: # 1年前までの株価データがない場合はブレイクする
             return {}
 
         df = dfs[0]
         df = df.drop(columns=['修正1株配', '発表日'])
         df = df.dropna(how='all')
         df = df.drop(len(df))
-        df = df.iloc[::-1]  # 時系列降順に並び替え
+        # df = df.iloc[::-1]  # 時系列降順に並び替え
         df.index = range(len(df))
+     
+        values = df["決算期"]
+        year_month = pd.Series(0, index=range(len(values)))
+        for i, value in enumerate(values):
+            year_month[i] = value[-7:]
+            # "予"が含まれている場合に(E)を追加
+            if "予" in value:
+                year_month[i] = "(E)" + year_month[i]
+        df["決算期"] = year_month
 
-        # 1年前の決算情報を抽出する
-        past1_year = df.iat[1, 0]
-        past1_sales = df.iat[1, 1]
-        past1_OP = df.iat[1, 2]
-        past1_EPS = df.iat[1, 5]
+        # print(df)
 
-        # 2年前の決算情報を抽出する
-        past2_year = df.iat[2, 0]
-        past2_sales = df.iat[2, 1]
-        past2_OP = df.iat[2, 2]
-        past2_EPS = df.iat[2, 5]
+        df_flatten = pd.DataFrame(df.values.flatten()).T
+        df_flatten.columns = [
+            f"{col}{i}" for i in range(len(df)) for col in df.columns
+        ]
 
-        # 3年前の決算情報を抽出する
-        past3_year = df.iat[3, 0]
-        past3_sales = df.iat[3, 1]
-        past3_OP = df.iat[3, 2]
-        past3_EPS = df.iat[3, 5]
+        # print(df_flatten)
 
-        result = {
-            'sales3_year': past3_year,
-            'sales3_sales': past3_sales,
-            'sales3_OP': past3_OP,
-            'sales3_EPS': past3_EPS,
-            'sales2_year': past2_year,
-            'sales2_sales': past2_sales,
-            'sales2_OP': past2_OP,
-            'sales2_EPS': past2_EPS,
-            'sales1_year': past1_year,
-            'sales1_sales': past1_sales,
-            'sales1_OP': past1_OP,
-            'sales1_EPS': past1_EPS,
-        }
-
-        print(result)
+        df_flatten.rename(index={0: code}, inplace=True)
+        self.df = pd.concat([self.df, df_flatten], axis=1)
+        # print(result_df)
 
         time.sleep(0.5)
 
         # return res_sales
-
-
-
-    def write_data(self):
-        print('------------------------')
-        print('write_data')
-        print('------------------------')
