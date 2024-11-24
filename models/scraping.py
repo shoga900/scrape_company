@@ -1,6 +1,6 @@
 """Defined a robot model"""
-import sys
 import pandas as pd
+import sys
 import time
 
 from models import handling
@@ -28,6 +28,10 @@ class ScrapingRobot(Scraping):
 
     def output_data(self):
         print(self.df)
+        csv_writer = handling.CsvWriter(
+            'company_information.csv'
+        )
+        csv_writer.write_dataframe(self.df)
 
 
     def scrape_basic_info(self, code):
