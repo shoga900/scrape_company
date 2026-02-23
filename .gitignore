@@ -1,0 +1,16 @@
+# Mac
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Input data
+input/
+
+# Output
+output/
+
+# Old files
+old/
